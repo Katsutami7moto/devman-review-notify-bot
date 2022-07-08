@@ -1,18 +1,38 @@
-import json
 from time import sleep
 
 import requests
 from environs import Env
+from telegram import Bot
+
+
+def send_notification(bot: Bot, chat_id: int, attempt: dict):
+    msg = f"""Урок "{attempt['lesson_title']}" был проверен!
+{
+    'Нужно проработать улучшения!'
+    if attempt['is_negative']
+    else 'Можно приступать к следующему!'
+}
+Ссылка на проверенный урок:
+{attempt['lesson_url']}
+"""
+    bot.send_message(
+        chat_id=chat_id,
+        text=msg
+    )
 
 
 def main():
     env = Env()
     env.read_env()
-    token: str = env('DEVMAN_TOKEN')
+    devman_token: str = env('DEVMAN_TOKEN')
     long_poll_url = 'https://dvmn.org/api/long_polling/'
     headers = {
-        'Authorization': f'Token {token}',
+        'Authorization': f'Token {devman_token}',
     }
+
+    bot_token: str = env('BOT_TOKEN')
+    bot = Bot(token=bot_token)
+    chat_id: int = env.int('CHAT_ID')
 
     first_reconnection = True
     timestamp = 90000000000
@@ -29,8 +49,10 @@ def main():
             )
             response.raise_for_status()
             status: dict = response.json()
-            print(json.dumps(status, indent=4, ensure_ascii=False))
             timestamp = status['last_attempt_timestamp']
+            new_attempts: list[dict] = status['new_attempts']
+            for attempt in new_attempts:
+                send_notification(bot, chat_id, attempt)
         except requests.exceptions.ConnectionError as connect_err:
             print(f'Connection failure: {connect_err};')
             if first_reconnection:
