@@ -15,16 +15,22 @@ def main():
     }
 
     first_reconnection = True
+    timestamp = 90000000000
     while True:
         try:
+            payload = {
+                'timestamp': timestamp
+            }
             response = requests.get(
                 long_poll_url,
                 headers=headers,
-                timeout=60
+                params=payload,
+                timeout=90
             )
             response.raise_for_status()
             status: dict = response.json()
             print(json.dumps(status, indent=4, ensure_ascii=False))
+            timestamp = status['last_attempt_timestamp']
         except requests.exceptions.ConnectionError as connect_err:
             print(f'Connection failure: {connect_err};')
             if first_reconnection:
