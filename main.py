@@ -1,3 +1,4 @@
+from textwrap import dedent
 from time import sleep
 
 import requests
@@ -6,18 +7,19 @@ from telegram import Bot
 
 
 def send_notification(bot: Bot, chat_id: int, attempt: dict):
-    msg = f"""Урок "{attempt['lesson_title']}" был проверен!
-{
-    'Нужно проработать улучшения!'
-    if attempt['is_negative']
-    else 'Можно приступать к следующему!'
-}
-Ссылка на проверенный урок:
-{attempt['lesson_url']}
-"""
+    msg = f"""\
+    Урок "{attempt['lesson_title']}" был проверен!
+    {
+        'Нужно проработать улучшения!'
+        if attempt['is_negative']
+        else 'Можно приступать к следующему!'
+    }
+    Ссылка на проверенный урок:
+    {attempt['lesson_url']}
+    """
     bot.send_message(
         chat_id=chat_id,
-        text=msg
+        text=dedent(msg)
     )
 
 
