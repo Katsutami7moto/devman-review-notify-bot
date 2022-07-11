@@ -30,9 +30,9 @@ def main():
         'Authorization': f'Token {devman_token}',
     }
 
-    bot_token: str = env('BOT_TOKEN')
-    bot = Bot(token=bot_token)
-    chat_id: int = env.int('CHAT_ID')
+    tg_bot_token: str = env('TELEGRAM_BOT_TOKEN')
+    bot = Bot(token=tg_bot_token)
+    tg_chat_id: int = env.int('TELEGRAM_CHAT_ID')
 
     first_reconnection = True
     timestamp = 90000000000
@@ -52,7 +52,7 @@ def main():
             timestamp = status['last_attempt_timestamp']
             new_attempts: list[dict] = status['new_attempts']
             for attempt in new_attempts:
-                send_notification(bot, chat_id, attempt)
+                send_notification(bot, tg_chat_id, attempt)
         except requests.exceptions.ConnectionError as connect_err:
             print(f'Connection failure: {connect_err};')
             if first_reconnection:

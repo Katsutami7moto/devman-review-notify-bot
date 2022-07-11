@@ -16,8 +16,8 @@ It is the file to contain environmental variables that usually store data unique
 2. Copy and paste this to `.env` file:
 ```dotenv
 DEVMAN_TOKEN='{devman_token}'
-BOT_TOKEN='{telegram_token}'
-CHAT_ID={telegram_chat_id}
+TELEGRAM_BOT_TOKEN='{telegram_token}'
+TELEGRAM_CHAT_ID={telegram_chat_id}
 ```
 3. Replace `{devman_token}` with your [Devman API](https://dvmn.org/api/docs/) personal token. For that you have to be signed up for [dvmn.org](https://dvmn.org/).
 4. Replace `{telegram_token}` with API token for the Telegram bot you have created with the help of [BotFather](https://telegram.me/BotFather). This token will look something like this: `958423683:AAEAtJ5Lde5YYfkjergber`.
