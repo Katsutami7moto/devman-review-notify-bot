@@ -65,7 +65,9 @@ def main():
         except requests.exceptions.ReadTimeout:
             continue
         else:
-            first_reconnection = True
+            if not first_reconnection:
+                print('Connection is restored.')
+                first_reconnection = True
 
 
 if __name__ == "__main__":
