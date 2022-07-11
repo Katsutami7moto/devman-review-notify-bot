@@ -48,9 +48,9 @@ def main():
                 timeout=90
             )
             response.raise_for_status()
-            status: dict = response.json()
-            timestamp = status['last_attempt_timestamp']
-            new_attempts: list[dict] = status['new_attempts']
+            devman_server_status: dict = response.json()
+            timestamp = devman_server_status['last_attempt_timestamp']
+            new_attempts: list[dict] = devman_server_status['new_attempts']
             for attempt in new_attempts:
                 send_notification(bot, tg_chat_id, attempt)
         except requests.exceptions.ConnectionError as connect_err:
