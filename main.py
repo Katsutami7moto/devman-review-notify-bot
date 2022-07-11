@@ -1,5 +1,5 @@
 from textwrap import dedent
-from time import sleep
+from time import sleep, time
 
 import requests
 from environs import Env
@@ -37,7 +37,7 @@ def main():
     tg_chat_id: int = env.int('TELEGRAM_CHAT_ID')
 
     first_reconnection = True
-    timestamp = 90000000000
+    timestamp = time()
     while True:
         try:
             payload = {
