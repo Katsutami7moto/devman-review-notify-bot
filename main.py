@@ -48,6 +48,7 @@ def get_reviews(devman_token: str, bot: Bot, tg_chat_id: int):
 
             if not first_reconnection:
                 logging.warning('Connection is restored.')
+                first_reconnection = True
 
             if devman_server_status == 'timeout':
                 timestamp = lessons_reviews.get('timestamp_to_request')
@@ -70,8 +71,6 @@ def get_reviews(devman_token: str, bot: Bot, tg_chat_id: int):
                 sleep(15)
         except requests.exceptions.ReadTimeout as err:
             logging.exception(err)
-        else:
-            first_reconnection = True
 
 
 def main():
