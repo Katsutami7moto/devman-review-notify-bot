@@ -9,14 +9,14 @@ from telegram import Bot
 
 def send_notification(bot: Bot, chat_id: int, attempt: dict):
     msg = f"""\
-    Урок "{attempt['lesson_title']}" был проверен!
+    Урок "{attempt.get('lesson_title')}" был проверен!
     {
     'Нужно проработать улучшения!'
-    if attempt['is_negative']
+    if attempt.get('is_negative')
     else 'Можно приступать к следующему!'
     }
     Ссылка на проверенный урок:
-    {attempt['lesson_url']}
+    {attempt.get('lesson_url')}
     """
     bot.send_message(
         chat_id=chat_id,
@@ -65,8 +65,8 @@ def get_reviews(timestamp: float, bot: Bot, tg_chat_id: int,
     if devman_server_status == 'timeout':
         timestamp = lessons_reviews.get('timestamp_to_request')
     elif devman_server_status == 'found':
-        timestamp = lessons_reviews['last_attempt_timestamp']
-        new_attempts: list[dict] = lessons_reviews['new_attempts']
+        timestamp = lessons_reviews.get('last_attempt_timestamp')
+        new_attempts = lessons_reviews.get('new_attempts')
         for attempt in new_attempts:
             send_notification(bot, tg_chat_id, attempt)
     else:
