@@ -90,7 +90,7 @@ def main():
         'Authorization': f'Token {devman_token}',
     }
 
-    logging.warning('Bot is running.')
+    logging.info('Bot is running.')
 
     handle_errors(
         get_reviews,
