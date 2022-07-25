@@ -101,7 +101,7 @@ def main():
     tg_chat_id: int = env.int('TELEGRAM_CHAT_ID')
 
     logger = logging.getLogger('Logger')
-    logger.setLevel(logging.WARNING)
+    logger.setLevel(logging.INFO)
     logger.addHandler(TelegramLogsHandler(tg_token, tg_chat_id))
     logger.info('Bot is running.')
 
