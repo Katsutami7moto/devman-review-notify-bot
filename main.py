@@ -35,14 +35,10 @@ def send_notification(logger: logging.Logger, attempt: dict):
 
 def handle_errors(func_, logger: logging.Logger, *args):
     first_reconnection = True
-    err_test = True
     timestamp = time()
     while True:
         try:
             timestamp = func_(timestamp, logger, *args)
-
-            if err_test:
-                print(42 / 0)  # test exception posting
 
             if not first_reconnection:
                 logger.warning('Connection is restored.')
@@ -63,7 +59,6 @@ def handle_errors(func_, logger: logging.Logger, *args):
         except Exception as other_err:
             logger.error('Bot encountered an error!')
             logger.exception(other_err)
-            err_test = False
 
 
 def get_reviews(timestamp: float, logger: logging.Logger,

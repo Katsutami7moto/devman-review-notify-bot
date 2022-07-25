@@ -9,10 +9,10 @@ Then open terminal form unzipped directory and use `pip` (or `pip3`, if there is
 ```commandline
 pip install -r requirements.txt
 ```
-Before you run any of the scripts, you will need to configure environmental variables:
+Before you run any of the scripts, you will need to configure environment variables:
 
 1. Go to the unzipped directory and create a file with the name `.env` (yes, it has only the extension).
-It is the file to contain environmental variables that usually store data unique to each user, thus you will need to create your own.
+This file will contain environment variables that usually store data unique to each user, thus you will need to create your own.
 2. Copy and paste this to `.env` file:
 ```dotenv
 DEVMAN_TOKEN='{devman_token}'
@@ -30,6 +30,23 @@ Start chat with the bot you have created. Then run the script with this command:
 python3 main.py
 ```
 Bot will send you messages when your lessons are reviewed.
+
+### How to deploy
+
+1. Fork this repository.
+2. Sign up at [Heroku](https://id.heroku.com/login).
+3. Create [an app](https://dashboard.heroku.com/new-app) at Heroku; choose `Europe` region.
+4. [Connect](https://dashboard.heroku.com/apps/devman-review-notify-bot/deploy/github) forked GitHub repository.
+5. Go to [Settings](https://dashboard.heroku.com/apps/devman-review-notify-bot/settings) and set `Config Vars` from previously described environment variables, putting each name to `KEY` and value to `VALUE`, e.g. `DEVMAN_TOKEN` to `KEY` and `{devman_token}` (here without `' '` quatation marks) to `VALUE`.
+6. Go to [Deploy](https://dashboard.heroku.com/apps/devman-review-notify-bot/deploy/github) section, scroll to bottom, to `Manual Deploy`, be sure to choose `main` branch and click `Deploy Branch` button.
+7. Bot should start working and send you a `Bot is running.` message (if you have started the chat with it), but just in case check the [logs](https://dashboard.heroku.com/apps/devman-review-notify-bot/logs) of the app. At the end it should look something like this:
+```
+2022-07-25T12:52:42.000000+00:00 app[api]: Build succeeded
+2022-07-25T12:52:42.153483+00:00 heroku[bot.1]: Stopping all processes with SIGTERM
+2022-07-25T12:52:42.338522+00:00 heroku[bot.1]: Process exited with status 143
+2022-07-25T12:52:42.793206+00:00 heroku[bot.1]: Starting process with command `python3 main.py`
+2022-07-25T12:52:43.389877+00:00 heroku[bot.1]: State changed from starting to up
+```
 
 ### Project Goals
 
