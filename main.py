@@ -6,6 +6,8 @@ import requests
 from environs import Env
 from telegram import Bot
 
+logger = logging.getLogger('Logger')
+
 
 class TelegramLogsHandler(logging.Handler):
 
@@ -19,7 +21,7 @@ class TelegramLogsHandler(logging.Handler):
         self.tg_bot.send_message(chat_id=self.chat_id, text=log_entry)
 
 
-def send_notification(logger: logging.Logger, attempt: dict):
+def send_notification(attempt: dict):
     msg = f"""\
     Урок "{attempt.get('lesson_title')}" был проверен!
     {
@@ -33,12 +35,12 @@ def send_notification(logger: logging.Logger, attempt: dict):
     logger.info(dedent(msg))
 
 
-def handle_errors(func_, logger: logging.Logger, *args):
+def handle_errors(func_, *args):
     first_reconnection = True
     timestamp = time()
     while True:
         try:
-            timestamp = func_(timestamp, logger, *args)
+            timestamp = func_(timestamp, *args)
 
             if not first_reconnection:
                 logger.warning('Connection is restored.')
@@ -62,8 +64,7 @@ def handle_errors(func_, logger: logging.Logger, *args):
             logger.exception(other_err)
 
 
-def get_reviews(timestamp: float, logger: logging.Logger,
-                long_poll_url: str, headers: dict) -> float:
+def get_reviews(timestamp: float, long_poll_url: str, headers: dict) -> float:
     payload = {
         'timestamp': timestamp
     }
@@ -83,7 +84,7 @@ def get_reviews(timestamp: float, logger: logging.Logger,
         timestamp = lessons_reviews.get('last_attempt_timestamp')
         new_attempts = lessons_reviews.get('new_attempts')
         for attempt in new_attempts:
-            send_notification(logger, attempt)
+            send_notification(attempt)
     else:
         logger.warning(response)
     return timestamp
@@ -96,7 +97,6 @@ def main():
     tg_token: str = env('TELEGRAM_BOT_TOKEN')
     tg_chat_id: int = env.int('TELEGRAM_CHAT_ID')
 
-    logger = logging.getLogger('Logger')
     logger.setLevel(logging.INFO)
     logger.addHandler(TelegramLogsHandler(tg_token, tg_chat_id))
     logger.info('Bot is running.')
@@ -107,7 +107,6 @@ def main():
     }
     handle_errors(
         get_reviews,
-        logger,
         long_poll_url,
         headers
     )
