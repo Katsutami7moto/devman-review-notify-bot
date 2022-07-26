@@ -44,13 +44,14 @@ def handle_errors(func_, logger: logging.Logger, *args):
                 logger.warning('Connection is restored.')
                 first_reconnection = True
         except requests.exceptions.ConnectionError as connect_err:
-            logger.error('Connection is down!')
-            logger.exception(connect_err)
             if first_reconnection:
+                logger.error('Connection is down!')
+                logger.exception(connect_err)
                 logger.warning('Retry in 5 seconds...')
                 sleep(5)
                 first_reconnection = False
             else:
+                logger.error('Connection is still down!')
                 logger.warning('Retry in 15 seconds...')
                 sleep(15)
         except requests.exceptions.ReadTimeout as err:
