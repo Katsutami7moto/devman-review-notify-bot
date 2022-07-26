@@ -1,10 +1,13 @@
 import logging
+from collections import namedtuple
 from textwrap import dedent
 from time import sleep, time
 
 import requests
 from environs import Env
 from telegram import Bot
+
+Timestamp = namedtuple('Timestamp', 'value')
 
 logger = logging.getLogger('Logger')
 
@@ -35,12 +38,37 @@ def send_notification(attempt: dict):
     logger.info(dedent(msg))
 
 
-def handle_errors(func_, *args):
+def get_reviews(timestamp: Timestamp, long_poll_url: str, headers: dict):
+    payload = {
+        'timestamp': timestamp.value
+    }
+    response = requests.get(
+        long_poll_url,
+        headers=headers,
+        params=payload,
+        timeout=120
+    )
+    response.raise_for_status()
+    lessons_reviews: dict = response.json()
+    devman_server_status = lessons_reviews.get('status')
+
+    if devman_server_status == 'timeout':
+        timestamp.value = lessons_reviews.get('timestamp_to_request')
+    elif devman_server_status == 'found':
+        timestamp.value = lessons_reviews.get('last_attempt_timestamp')
+        new_attempts = lessons_reviews.get('new_attempts')
+        for attempt in new_attempts:
+            send_notification(attempt)
+    else:
+        logger.error(response)
+
+
+def handle_errors_getting_reviews(long_poll_url: str, headers: dict):
     first_reconnection = True
-    timestamp = time()
+    timestamp = Timestamp(time())
     while True:
         try:
-            timestamp = func_(timestamp, *args)
+            get_reviews(timestamp, long_poll_url, headers)
 
             if not first_reconnection:
                 logger.warning('Connection is restored.')
@@ -64,32 +92,6 @@ def handle_errors(func_, *args):
             logger.exception(other_err)
 
 
-def get_reviews(timestamp: float, long_poll_url: str, headers: dict) -> float:
-    payload = {
-        'timestamp': timestamp
-    }
-    response = requests.get(
-        long_poll_url,
-        headers=headers,
-        params=payload,
-        timeout=120
-    )
-    response.raise_for_status()
-    lessons_reviews: dict = response.json()
-    devman_server_status = lessons_reviews.get('status')
-
-    if devman_server_status == 'timeout':
-        timestamp = lessons_reviews.get('timestamp_to_request')
-    elif devman_server_status == 'found':
-        timestamp = lessons_reviews.get('last_attempt_timestamp')
-        new_attempts = lessons_reviews.get('new_attempts')
-        for attempt in new_attempts:
-            send_notification(attempt)
-    else:
-        logger.warning(response)
-    return timestamp
-
-
 def main():
     env = Env()
     env.read_env()
@@ -105,11 +107,7 @@ def main():
     headers = {
         'Authorization': f'Token {devman_token}',
     }
-    handle_errors(
-        get_reviews,
-        long_poll_url,
-        headers
-    )
+    handle_errors_getting_reviews(long_poll_url, headers)
 
 
 if __name__ == "__main__":
