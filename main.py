@@ -1,13 +1,11 @@
 import logging
-from collections import namedtuple
 from textwrap import dedent
 from time import sleep, time
+from types import SimpleNamespace
 
 import requests
 from environs import Env
 from telegram import Bot
-
-Timestamp = namedtuple('Timestamp', 'value')
 
 logger = logging.getLogger('Logger')
 
@@ -38,7 +36,7 @@ def send_notification(attempt: dict):
     logger.info(dedent(msg))
 
 
-def get_reviews(timestamp: Timestamp, long_poll_url: str, headers: dict):
+def get_reviews(timestamp: SimpleNamespace, long_poll_url: str, headers: dict):
     payload = {
         'timestamp': timestamp.value
     }
@@ -65,7 +63,8 @@ def get_reviews(timestamp: Timestamp, long_poll_url: str, headers: dict):
 
 def handle_errors_getting_reviews(long_poll_url: str, headers: dict):
     first_reconnection = True
-    timestamp = Timestamp(time())
+    timestamp = SimpleNamespace()
+    timestamp.value = time()
     while True:
         try:
             get_reviews(timestamp, long_poll_url, headers)
