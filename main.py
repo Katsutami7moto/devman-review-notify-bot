@@ -12,17 +12,17 @@ logger = logging.getLogger('Logger')
 
 class TelegramLogsHandler(logging.Handler):
 
-    def __init__(self, tg_token, chat_id):
+    def __init__(self, tg_bot: Bot, chat_id: int):
         super().__init__()
         self.chat_id = chat_id
-        self.tg_bot = Bot(token=tg_token)
+        self.tg_bot = tg_bot
 
     def emit(self, record):
         log_entry = self.format(record)
         self.tg_bot.send_message(chat_id=self.chat_id, text=log_entry)
 
 
-def send_notification(attempt: dict):
+def send_notification(tg_bot: Bot, chat_id: int, attempt: dict):
     msg = f"""\
     Урок "{attempt.get('lesson_title')}" был проверен!
     {
@@ -33,10 +33,11 @@ def send_notification(attempt: dict):
     Ссылка на проверенный урок:
     {attempt.get('lesson_url')}
     """
-    logger.info(dedent(msg))
+    tg_bot.send_message(chat_id=chat_id, text=dedent(msg))
 
 
-def get_reviews(timestamp: SimpleNamespace, long_poll_url: str, headers: dict):
+def get_reviews(tg_bot: Bot, chat_id: int, timestamp: SimpleNamespace,
+                long_poll_url: str, headers: dict):
     payload = {
         'timestamp': timestamp.value
     }
@@ -56,19 +57,19 @@ def get_reviews(timestamp: SimpleNamespace, long_poll_url: str, headers: dict):
         timestamp.value = lessons_reviews.get('last_attempt_timestamp')
         new_attempts = lessons_reviews.get('new_attempts')
         for attempt in new_attempts:
-            send_notification(attempt)
+            send_notification(tg_bot, chat_id, attempt)
     else:
         logger.error(response)
 
 
-def handle_errors_getting_reviews(long_poll_url: str, headers: dict):
+def handle_errors_getting_reviews(tg_bot: Bot, chat_id: int,
+                                  long_poll_url: str, headers: dict):
     first_reconnection = True
     timestamp = SimpleNamespace()
     timestamp.value = time()
     while True:
         try:
-            get_reviews(timestamp, long_poll_url, headers)
-
+            get_reviews(tg_bot, chat_id, timestamp, long_poll_url, headers)
             if not first_reconnection:
                 logger.warning('Connection is restored.')
                 first_reconnection = True
@@ -97,16 +98,17 @@ def main():
     devman_token: str = env('DEVMAN_TOKEN')
     tg_token: str = env('TELEGRAM_BOT_TOKEN')
     tg_chat_id: int = env.int('TELEGRAM_CHAT_ID')
+    tg_bot = Bot(token=tg_token)
 
     logger.setLevel(logging.INFO)
-    logger.addHandler(TelegramLogsHandler(tg_token, tg_chat_id))
+    logger.addHandler(TelegramLogsHandler(tg_bot, tg_chat_id))
     logger.info('Bot is running.')
 
     long_poll_url = 'https://dvmn.org/api/long_polling/'
     headers = {
         'Authorization': f'Token {devman_token}',
     }
-    handle_errors_getting_reviews(long_poll_url, headers)
+    handle_errors_getting_reviews(tg_bot, tg_chat_id, long_poll_url, headers)
 
 
 if __name__ == "__main__":
