@@ -1,7 +1,6 @@
 import logging
 from textwrap import dedent
 from time import sleep, time
-from types import SimpleNamespace
 
 import requests
 from environs import Env
@@ -36,40 +35,13 @@ def send_notification(tg_bot: Bot, chat_id: int, attempt: dict):
     tg_bot.send_message(chat_id=chat_id, text=dedent(msg))
 
 
-def get_reviews(tg_bot: Bot, chat_id: int, timestamp: SimpleNamespace,
-                long_poll_url: str, headers: dict):
-    payload = {
-        'timestamp': timestamp.value
-    }
-    response = requests.get(
-        long_poll_url,
-        headers=headers,
-        params=payload,
-        timeout=120
-    )
-    response.raise_for_status()
-    lessons_reviews: dict = response.json()
-    devman_server_status = lessons_reviews.get('status')
-
-    if devman_server_status == 'timeout':
-        timestamp.value = lessons_reviews.get('timestamp_to_request')
-    elif devman_server_status == 'found':
-        timestamp.value = lessons_reviews.get('last_attempt_timestamp')
-        new_attempts = lessons_reviews.get('new_attempts')
-        for attempt in new_attempts:
-            send_notification(tg_bot, chat_id, attempt)
-    else:
-        logger.error(response)
-
-
-def handle_errors_getting_reviews(tg_bot: Bot, chat_id: int,
-                                  long_poll_url: str, headers: dict):
+def fetch_devman_reviews(long_poll_url: str, headers: dict, payload: dict):
     first_reconnection = True
-    timestamp = SimpleNamespace()
-    timestamp.value = time()
     while True:
         try:
-            get_reviews(tg_bot, chat_id, timestamp, long_poll_url, headers)
+            response = requests.get(long_poll_url, headers=headers,
+                                    params=payload, timeout=120)
+            response.raise_for_status()
             if not first_reconnection:
                 logger.warning('Connection is restored.')
                 first_reconnection = True
@@ -90,6 +62,19 @@ def handle_errors_getting_reviews(tg_bot: Bot, chat_id: int,
         except Exception as other_err:
             logger.error('Bot encountered an error!')
             logger.exception(other_err)
+        else:
+            yield response.json()
+
+
+def get_timestamp(devman_response: dict):
+    devman_response_status = devman_response.get('status')
+    if devman_response_status == 'timeout':
+        return devman_response.get('timestamp_to_request')
+    elif devman_response_status == 'found':
+        return devman_response.get('last_attempt_timestamp')
+    else:
+        logger.error('Devman server response has no status!')
+        logger.error(devman_response)
 
 
 def main():
@@ -105,10 +90,19 @@ def main():
     logger.info('Bot is running.')
 
     long_poll_url = 'https://dvmn.org/api/long_polling/'
-    headers = {
-        'Authorization': f'Token {devman_token}',
-    }
-    handle_errors_getting_reviews(tg_bot, tg_chat_id, long_poll_url, headers)
+    headers = {'Authorization': f'Token {devman_token}'}
+    payload = {'timestamp': time()}
+    for devman_review in fetch_devman_reviews(long_poll_url, headers, payload):
+        timestamp = get_timestamp(devman_review)
+        if not timestamp:
+            continue
+        payload['timestamp'] = timestamp
+        if devman_review.get('status') == 'found':
+            new_attempts = devman_review.get('new_attempts')
+        else:
+            continue
+        for attempt in new_attempts:
+            send_notification(tg_bot, tg_chat_id, attempt)
 
 
 if __name__ == "__main__":
